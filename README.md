@@ -1,0 +1,2 @@
+# SpeedLightEmu
+Nikon Speedlight emulator
