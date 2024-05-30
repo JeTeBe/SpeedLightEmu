@@ -17,18 +17,14 @@
 #include <SPI.h>
 #include "pin_config.h"
 
-
+#define SHOW_DATA
 
 TFT_eSPI tft = TFT_eSPI();  // Invoke library, pins defined in User_Setup.h
 //TFT_eSprite sprite = TFT_eSprite(&tft);
 unsigned short imageS[256] = {0}; // edit this screenW * screen H
 
 unsigned long targetTime = 0;
-byte red = 31;
-byte green = 0;
-byte blue = 0;
 byte state = 0;
-unsigned int colour = red << 11;
 uint32_t runing = 0;
 uint16_t color = TFT_GREEN;
 
@@ -71,10 +67,6 @@ void setup(void)
 
     targetTime = millis() + 1000;
 
-    for (int i = 0; i < 256; i++) {
-        imageS[i] = i;
-    }
-
     //sprite.pushImage(0, 0, 16, 16, imageS);
     //sprite.pushSprite(100, 100);
 
@@ -82,7 +74,8 @@ void setup(void)
     pinMode(dataPin, INPUT_PULLUP);
     pinMode(ledPin, OUTPUT);
     pinMode(testPin, OUTPUT);
-    attachInterrupt(clockPin, pin2Interrupt, FALLING);
+    attachInterrupt(clockPin, pin2Interrupt_F, FALLING);
+    attachInterrupt(dataPin, pin2Interrupt_R, FALLING);
 
     ledcSetup(ledChannel, freq, resolution); // 0-15, 5000, 8
     ledcAttachPin(TFT_BL, ledChannel); // TFT_BL, 0 - 15
@@ -92,33 +85,34 @@ void setup(void)
     tft.drawCentreString("NIKON Speedlight simulator", 80, 0, 2);
 }
 
-void pin2Interrupt(void)
+void pin2Interrupt_R(void)
 {
+  Serial.println("Rising");
   digitalWrite(testPin, HIGH);
   dataState = digitalRead(dataPin);
+  dataState = 1;
   digitalWrite(testPin, LOW);
-  
-  if (i == 72)
-  {
-     //j++;
-     i=0;  
-  }
-   
-  //BjCmnd[i] = dataState;
-  i++;        
-  
+}
+
+void pin2Interrupt_F(void)
+{
+  Serial.println("Falling");
+  digitalWrite(testPin, HIGH);
+  dataState = digitalRead(dataPin);
+  dataState = 0;
+  digitalWrite(testPin, LOW);
 }
 
 void loop()
 {
     //delay(1);
-    //if (millis() > runing) {
-    //    Serial.print("Current running ");
-    //    Serial.print(millis());
-    //    Serial.println(" millis");
-    //    runing = millis() + 1000;
-    //}
-    //if (targetTime < millis()) 
+    if (millis() > runing) {
+        //Serial.print("Current running ");
+        //Serial.print(millis());
+        //Serial.println(" millis");
+        runing = millis() + 1000;
+    }
+    if (targetTime < millis()) 
     {
         targetTime = millis() + 5;
 
@@ -199,8 +193,8 @@ void loop()
 
         //tft.drawString(" is pi", xpos, ypos, font); // Continue printing from new x position
         //tft.drawString(" is pi", xpos, ypos, font); // Continue printing from new x position
-#ifdef JOS
-        tft.drawPixel(x,y,color);
+#ifdef SHOW_DATA
+        tft.drawPixel(x,y+dataState,color);
         if (x < screenW)
         {
             x = x + 1;
